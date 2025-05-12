@@ -1,0 +1,6 @@
+train: /content/drive/MyDrive/1TIAOR20242_FASE6_CAP1/dataset_images/images/train/
+val: /content/drive/MyDrive/1TIAOR20242_FASE6_CAP1/dataset_images/images/val/
+test: /content/drive/MyDrive/1TIAOR20242_FASE6_CAP1/dataset_images/images/test/
+
+nc: 2
+names: ['Carro', 'Moto']
