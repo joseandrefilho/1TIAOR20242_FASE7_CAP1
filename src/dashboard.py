@@ -12,7 +12,7 @@ from models.leitura import Leitura
 from models.irrigacao import Irrigacao
 from models.cultura import Cultura
 from ml.predictor import IrrigationPredictor
-from models.alerta import registrar_alerta, listar_alertas
+from models.alerta import listar_alertas
 
 st.set_page_config(
     page_title="FarmTech Solutions Dashboard",
@@ -129,11 +129,11 @@ if aba == "Dashboard":
         sensor_id = None
 
         required_sensors = {
-            'umidadeSolo': ('umidade', 'Umidade do Solo'),
+            'umidadeSolo': ('umidadeSolo', 'Umidade do Solo'),
             'temperatura': ('temperatura', 'Temperatura'),
-            'pH': ('ph', 'pH'),
-            'nutrienteP': ('nutriente_p', 'Nutriente P'),
-            'nutrienteK': ('nutriente_k', 'Nutriente K')
+            'pH': ('pH', 'pH'),
+            'nutrienteP': ('nutrienteP', 'Nutriente P'),
+            'nutrienteK': ('nutrienteK', 'Nutriente K')
         }
 
         for sensor_key, (model_key, display_name) in required_sensors.items():
@@ -147,8 +147,20 @@ if aba == "Dashboard":
                 missing_data.append(display_name)
                 st.error(f"❌ {display_name}: Sem dados")
 
-        if len(current_data) == len(required_sensors):
-            prediction = predictor.predict_irrigation_need(current_data)
+        # Garante a ordem das features igual ao fit do modelo
+        feature_order = ['umidadeSolo', 'temperatura', 'pH', 'nutrienteP', 'nutrienteK']
+        current_data_ordered = {k: current_data[k] for k in feature_order if k in current_data}
+        if len(current_data_ordered) == len(feature_order):
+            df = pd.DataFrame([current_data_ordered], columns=feature_order)
+            prediction = predictor.predict_irrigation_need(df.iloc[0].to_dict())
+        else:
+            st.warning("⚠️ Previsão indisponível: dados faltantes.")
+            st.write("Dados faltantes:")
+            for sensor in missing_data:
+                st.write(f"- {sensor}")
+            prediction = None
+
+        if prediction:
             pred_col1, pred_col2 = st.columns(2)
 
             with pred_col1:
@@ -165,13 +177,6 @@ if aba == "Dashboard":
                     columns=['Fator', 'Importância']
                 ).sort_values('Importância', ascending=False)
                 st.dataframe(importances)
-
-            # Verifica divergência com leitura real e registra alerta se necessário
-            valor_irrigacao = latest_data[latest_data['NM_SENSOR'] == 'umidadeSolo']['VL_VALOR_LEITURA'].iloc[0]
-            if prediction['needs_irrigation'] and valor_irrigacao < 50:
-                registrar_alerta(sensor_id, "Irrigação necessária, mas não identificada pelo sistema")
-            elif not prediction['needs_irrigation'] and valor_irrigacao > 60:
-                registrar_alerta(sensor_id, "Irrigação realizada indevidamente segundo ML")
         else:
             st.warning("⚠️ Previsão indisponível")
             st.write("Dados faltantes:")
@@ -209,7 +214,7 @@ if aba == "Dashboard":
     with tab3:
         st.subheader("Localização dos Sensores")
         if not latest_data.empty:
-            fig_map = px.scatter_mapbox(
+            fig_map = px.scatter_map(
                 latest_data,
                 lat='VL_LATITUDE_SENSOR',
                 lon='VL_LONGITUDE_SENSOR',
@@ -234,7 +239,3 @@ elif aba == "Alertas":
         st.table(alertas)
     else:
         st.info("Nenhum alerta registrado.")
-
-    if st.button("📤 Enviar alertas pendentes via AWS SNS"):
-        os.system("python src/utils/sns_worker.py")
-        st.success("Alerta(s) enviados para AWS SNS (se houver).")

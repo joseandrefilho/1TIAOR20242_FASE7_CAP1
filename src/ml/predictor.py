@@ -50,6 +50,9 @@ class IrrigationPredictor:
                 X = df_pivot.drop('necessita_irrigacao', axis=1)
                 y = df_pivot['necessita_irrigacao']
 
+                # Salva a ordem das features para uso na previsão
+                self.feature_order = list(X.columns)
+
                 # Normaliza os dados
                 X_scaled = self.scaler.fit_transform(X)
                 
@@ -77,20 +80,22 @@ class IrrigationPredictor:
                     }
                 }
 
-            # Prepara os dados no mesmo formato do treino
-            df = pd.DataFrame([current_data])
+            # Usa a ordem de features salva no treino
+            feature_order = getattr(self, 'feature_order', list(current_data.keys()))
+            df = pd.DataFrame([[current_data.get(k, 0) for k in feature_order]], columns=feature_order)
             X_scaled = self.scaler.transform(df)
-            
-            # Faz a previsão
             prediction = self.model.predict(X_scaled)[0]
-            probability = self.model.predict_proba(X_scaled)[0][1]
-            
+            # Corrige erro de index: verifica se predict_proba tem 2 colunas
+            proba = self.model.predict_proba(X_scaled)[0]
+            if len(proba) > 1:
+                probability = proba[1]
+            else:
+                probability = proba[0]
             return {
                 'needs_irrigation': bool(prediction),
                 'confidence': float(probability),
                 'feature_importance': dict(zip(df.columns, self.model.feature_importances_))
             }
-            
         except Exception as e:
             print(f"Erro na previsão: {str(e)}")
             return {

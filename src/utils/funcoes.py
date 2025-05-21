@@ -16,7 +16,7 @@ class Funcoes:
             print(f"Salvando {key}: {value}")
 
             if key == "irrigacao":
-                if value == 0:
+                if value == 0 or value is None:
                     print("Irrigação não realizada.")
                     continue
 
@@ -29,7 +29,7 @@ class Funcoes:
                         continue
 
                     # Cria um objeto Irrigacao
-                    irrigacaoCreated = irrigacao.Irrigacao.create(cd_cultura=culturaFinded.cd_cultura, vl_quantidade_agua_aplicada=value)
+                    irrigacaoCreated = irrigacao.Irrigacao.create(cd_cultura=culturaFinded.cd_cultura, vl_quantidade_agua_aplicada=float(value))
                     if irrigacaoCreated:
                         print(f"Irrigação realizada com sucesso: {value}mm")
                         
@@ -38,6 +38,13 @@ class Funcoes:
 
             else:
                 try:
+                    # Garante que o valor não é None e é numérico
+                    if value is None or (isinstance(value, str) and not value.strip()):
+                        print(f"Valor inválido para {key}: {value}")
+                        continue
+
+                    value_float = float(value)
+                    
                     # Busca o sensor pelo nome da propriedade
                     sensorFinded = sensor.Sensor.get_by_name(key)
                     
@@ -47,9 +54,9 @@ class Funcoes:
                         continue
 
                     # Cria um objeto Leitura
-                    leituraCreated = leitura.Leitura.create(cd_sensor=sensorFinded.cd_sensor, vl_valor_leitura=value)
+                    leituraCreated = leitura.Leitura.create(cd_sensor=sensorFinded.cd_sensor, vl_valor_leitura=value_float)
                     if leituraCreated:
-                        print(f"Leitura de {key} salva com sucesso: {value}")
+                        print(f"Leitura de {key} salva com sucesso: {value_float}")
                         
                 except Exception as e:
                     print(f"Erro ao criar leitura para {key}: {e}")
