@@ -1,6 +1,0 @@
-train: ../../../dataset_images/images/train/
-val: ../../../dataset_images/images/val/
-test: ../../../dataset_images/images/test/
-
-nc: 2
-names: ['Carro', 'Moto']
