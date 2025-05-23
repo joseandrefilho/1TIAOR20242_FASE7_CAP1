@@ -1,9 +1,11 @@
 import paho.mqtt.client as mqtt
 import json
 from utils.funcoes import Funcoes
+from models.alerta import registrar_alerta
+
 
 class MQTTClient:
-    def __init__(self, broker="mqtt.eclipseprojects.io", port=1883, topic="rm87775/farmtech/data"):
+    def __init__(self, broker="mqtt.eclipseprojects.io", port=1883, topic="farmtech/grupo18/data"):
         self.broker = broker
         self.port = port
         self.topic = topic
@@ -33,6 +35,14 @@ class MQTTClient:
                 nutrienteK=payload.get('K'),       # Nutriente K
                 irrigacao=payload.get('IRR')       # Estado da Irrigação
             )
-            funcoes.save()  # Salva a leitura no banco de dados
+            # Após salvar a leitura:
+            funcoes.save() 
+
+            # Se irrigação foi ativada pelo ESP32, registra e envia
+            if payload.get("IRR") == 1:
+                from models.alerta import registrar_alerta
+                registrar_alerta(sensor_id=1, tipo_alerta="🚨 Irrigação foi ativada automaticamente pelo ESP32", enviar=True)
+
+
         except json.JSONDecodeError as e:
             print(f"Erro ao decodificar mensagem MQTT: {e}")
