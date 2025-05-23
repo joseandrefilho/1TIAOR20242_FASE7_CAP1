@@ -1,8 +1,13 @@
 from db.connection import DBConnection
 from datetime import datetime
-import requests
+import boto3
+from dotenv import load_dotenv
+import os
 
-API_URL = "https://6jgs11bi23.execute-api.eu-north-1.amazonaws.com/alerta"
+load_dotenv()
+
+SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 def registrar_alerta(sensor_id: int, tipo_alerta: str, enviar: bool = True):
     """
@@ -27,31 +32,21 @@ def registrar_alerta(sensor_id: int, tipo_alerta: str, enviar: bool = True):
             cur.close()
         print(f"[ALERTA] Gravado: {tipo_alerta} (sensor {sensor_id})")
         if enviar:
-            enviar_alerta_http(alerta_id.getvalue(), tipo_alerta, sensor_id)
+            enviar_alerta_sns(alerta_id.getvalue(), tipo_alerta, sensor_id)
     except Exception as e:
         print(f"[ERRO] Falha ao registrar alerta: {e}")
 
-def enviar_alerta_http(cd_alerta, tipo_alerta, sensor_id):
-    """
-    Envia o alerta via HTTP para a API da AWS.
-    """
-    payload = {
-        "umidade_id": str(cd_alerta),
-        "umidade_junto_ao_solo": tipo_alerta,
-        "Valor-percentual": f"{sensor_id:.2f}",
-        "Indices": [
-            {
-                "Indice": f"{sensor_id:.2f}",
-                "Horario": datetime.now().strftime('%H')
-            }
-        ]
-    }
+def enviar_alerta_sns(cd_alerta, tipo_alerta, sensor_id):
+    client = boto3.client('sns', region_name=AWS_REGION)
+    mensagem = f"[Alerta {cd_alerta}] {tipo_alerta} | Sensor ID: {sensor_id} | Data: {datetime.now()}"
     try:
-        response = requests.post(API_URL, json=payload)
-        response.raise_for_status()
-        print(f"[SNS] Alerta enviado: {cd_alerta}")
-        print(f"[SNS] Status code: {response.status_code}")
-        print(f"[SNS] Response body: {response.text}")
+        response = client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=mensagem,
+            Subject='🚨 Alerta FarmTech'
+        )
+        print(f"[SNS] Alerta SNS enviado: {cd_alerta}")
+        print(f"[SNS] MessageId: {response.get('MessageId')}")
         return True
     except Exception as e:
         print(f"[ERRO] Falha ao enviar alerta SNS: {e}")

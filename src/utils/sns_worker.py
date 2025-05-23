@@ -1,40 +1,32 @@
+import boto3
+from db.connection import DBConnection
 
-import requests
-from db.connection import get_connection
+SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:820119691435:AlertaIrrigacao"  # ajuste para o seu ARN real
 
-API_URL = "https://6jgs11bi23.execute-api.eu-north-1.amazonaws.com/alerta"
 
-def enviar_alerta_http(alerta):
-    payload = {
-        "umidade_id": str(alerta['cd_alerta']),
-        "umidade_junto_ao_solo": alerta['ds_tipo'],
-        "Valor-percentual": f"{alerta['sensor_id']:.2f}",
-        "Indices": [
-            {
-                "Indice": f"{alerta['sensor_id']:.2f}",
-                "Horario": alerta['dt_alerta'].strftime('%H')
-            }
-        ]
-    }
-    try:
-        response = requests.post(API_URL, json=payload)
-        response.raise_for_status()
-        print("✔️ Alerta enviado:", payload)
-        return True
-    except Exception as e:
-        print("❌ Erro ao enviar alerta:", e)
-        return False
+def enviar_alerta_sns(alerta):
+    client = boto3.client('sns', region_name='us-east-1')
+    mensagem = f"[Alerta {alerta['cd_alerta']}] {alerta['ds_tipo']} | Sensor ID: {alerta['sensor_id']} | Data: {alerta['dt_alerta']}"
+    response = client.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Message=mensagem,
+        Subject='🚨 Alerta FarmTech'
+    )
+    print("✔️ Alerta SNS enviado:", mensagem)
+    print("[SNS] MessageId:", response.get('MessageId'))
+    return True
+
 
 def processar_alertas():
     try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT cd_alerta, ds_tipo, dt_alerta, cd_sensor 
-            FROM t_ssa_alertas 
-            WHERE foi_enviado = 'N'
-        """)
-        alertas = cur.fetchall()
+        with DBConnection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT cd_alerta, ds_tipo, dt_alerta, cd_sensor 
+                FROM t_ssa_alertas 
+                ORDER BY dt_alerta DESC
+            """)
+            alertas = cur.fetchall()
 
         for cd_alerta, ds_tipo, dt_alerta, cd_sensor in alertas:
             alerta = {
@@ -43,16 +35,8 @@ def processar_alertas():
                 "dt_alerta": dt_alerta,
                 "sensor_id": float(cd_sensor) if cd_sensor else 0.0
             }
-            if enviar_alerta_http(alerta):
-                cur.execute("""
-                    UPDATE t_ssa_alertas 
-                    SET foi_enviado = 'S' 
-                    WHERE cd_alerta = :1
-                """, [cd_alerta])
+            enviar_alerta_sns(alerta)
 
-        conn.commit()
-        cur.close()
-        conn.close()
         print(f"{len(alertas)} alerta(s) processado(s).")
     except Exception as e:
         print(f"Erro ao processar alertas: {e}")
