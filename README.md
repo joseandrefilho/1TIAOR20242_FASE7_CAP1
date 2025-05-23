@@ -157,7 +157,7 @@ Integrar em uma única aplicação os serviços desenvolvidos nas Fases 1 a 6, p
 
 ## 🎥 Vídeo de Apresentação
 
-🔗 [Link para o vídeo (YouTube - não listado)](https://youtube.com/seu_link_aqui)
+🔗 [Link para o vídeo (YouTube - não listado)](https://youtu.be/jdzTJdaG_U8)
 
 ---
 
