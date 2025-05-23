@@ -77,10 +77,56 @@ Integrar em uma única aplicação os serviços desenvolvidos nas Fases 1 a 6, p
 
 ## ⚙️ Como Executar
 
-```bash
-pip install -r requirements.txt
-python src/main.py
-```
+1. **Clone o repositório**:
+   Primeiro, faça o clone do repositório do projeto em seu ambiente local:
+   ```bash
+   git clone https://github.com/joseandrefilho/1TIAOR20242_FASE7_CAP1.git
+   cd 1TIAOR20242_FASE3_CAP1
+   ```
+
+2. **Configuração do Banco de Dados**:
+   Para criar as tabelas necessárias, execute os scripts SQL disponíveis na pasta `mer`:
+   - No Oracle SQL Developer, execute o script `FarmTech_SCRIPT_DDL.sql` para criar o banco de dados e `FarmTech_SCRIPT_SampleData.sql` para inclusão dos registros iniciais de cultura e sensores.
+   - Detalhes adicionais estão disponíveis no [README](mer/README.md) da pasta `mer`.
+
+3. **Crie o tópico SNS**:
+   Para criar o tópico SNS, você pode usar o console da AWS ou a AWS CLI. Aqui está um exemplo de como criar um tópico SNS usando a AWS CLI:
+   ```bash
+   aws sns create-topic --name AlertaIrrigacao
+   ```
+
+4. **Configurar variáveis de ambiente**:
+   Crie um arquivo `.env` na raiz do projeto com as credenciais de acesso ao banco de dados Oracle:
+
+   ```bash
+   DB_USER=seu_usuario
+   DB_PASSWORD=sua_senha
+   DB_DSN=seu_dsn
+
+   SNS_TOPIC_ARN=SeuTopicoARN
+  AWS_REGION=Regiao
+  AWS_ACCESS_KEY_ID=SeuAccessKeyID
+  AWS_SECRET_ACCESS_KEY=SeuSecretAccessKey
+   ```
+
+4. **Instale as dependências**:
+   Na raiz do projeto, instale as dependências listadas no arquivo `requirements.txt`:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Execute o projeto localmente**:
+   Inicie o sistema rodando o arquivo `main.py` na pasta `src`:
+   ```bash
+   python src/main.py
+   ```
+
+6. **Execute o projeto no Wokwi**:
+   Você pode visualizar e interagir com a simulação do projeto no Wokwi clicando na imagem abaixo:
+
+   [![Simulação no Wokwi](wokwi/circuito_diagrama.png)](https://wokwi.com/projects/431525090602695681)
+
+   Ou clique diretamente [aqui](https://wokwi.com/projects/431525090602695681) para acessar a simulação.
 
 ---
 
@@ -107,16 +153,6 @@ python src/main.py
   - Gravado na tabela `T_SSA_ALERTAS`
   - Enviado via boto3 para o SNS
 
----
-
-## Wokwi - Simulação do Circuito
-
-Execute o projeto no Wokwi:
-   Você pode visualizar e interagir com a simulação do projeto no Wokwi clicando na imagem abaixo:
-
-   [![Simulação no Wokwi](wokwi/circuito_diagrama.png)](https://wokwi.com/projects/431525090602695681)
-
-   Ou clique diretamente [aqui](https://wokwi.com/projects/431525090602695681) para acessar a simulação.
 ---
 
 ## 🎥 Vídeo de Apresentação
